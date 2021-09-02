@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Java IO | Payne的小站</title>
+<meta name="description" content="克己、积累、坚持、格局、全力以赴
+对过程的关注要多于对结果的关注">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="shortcut icon" href="https://PaIn22152.github.io/favicon.ico">
+<link rel="stylesheet" href="https://PaIn22152.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://PaIn22152.github.io">
+        <img src="https://PaIn22152.github.io/images/avatar.png" class="site-logo">
+        <h1 class="site-title">Payne的小站</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="site-description">
+      克己、积累、坚持、格局、全力以赴
+对过程的关注要多于对结果的关注
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Java IO</h2>
+            <div class="post-date">2021-08-30</div>
+            
+            <div class="post-content">
+              <p><a href="https://toc.codepie.fun/">在线目录生成工具</a></p>
+<h1 id="目录">目录</h1>
+<ul>
+<li><a href="#head1"> 0.前言</a></li>
+<li><a href="#head2"> 1.概览</a></li>
+<li><a href="#head3"> 2.详细介绍</a></li>
+</ul>
+<h1 id="span-idhead1-0前言span"><span id="head1"> 0.前言</span></h1>
+<p>个人学习、整理和记录Java IO相关知识点用。其中大部分内容来自以下地址，表示感谢。<br>
+<a href="https://www.cyc2018.xyz/Java/Java%20IO.html#%E4%B8%80%E3%80%81%E6%A6%82%E8%A7%88">CS-Notes</a></p>
+<h1 id="span-idhead2-1概览span"><span id="head2"> 1.概览</span></h1>
+<p>Java的IO大概可以分为以下几类：<br>
+磁盘操作：File；<br>
+字节操作：InputStream和OutputStream；<br>
+字符操作：Reader和Writer；<br>
+对象操作：Serializable；<br>
+网络操作：Socket；<br>
+新的输入输出：NIO。</p>
+<h1 id="span-idhead3-2详细介绍span"><span id="head3"> 2.详细介绍</span></h1>
+<p>2.1 磁盘操作<br>
+File类可以用于表示文件和目录的信息，但是它不表示文件的内容。<br>
+2.2 字节操作<br>
+使用下面的代码实现文件复制：</p>
+<pre><code class="language-java">public static void copyFile(String src, String dist) throws IOException {
+    FileInputStream in = new FileInputStream(src);
+    FileOutputStream out = new FileOutputStream(dist);
+
+    byte[] buffer = new byte[20 * 1024];
+    int cnt;
+
+    // read() 最多读取 buffer.length 个字节
+    // 返回的是实际读取的个数
+    // 返回 -1 的时候表示读到 eof，即文件尾
+    while ((cnt = in.read(buffer, 0, buffer.length)) != -1) {
+        out.write(buffer, 0, cnt);
+    }
+
+    in.close();
+    out.close();
+}
+</code></pre>
+<p>Java I/O使用了装饰者模式来实现。以InputStream为例<br>
+InputStream是抽象组件；<br>
+FileInputStream是InputStream的子类，属于具体组件，提供了字节流的输入操作；<br>
+FilterInputStream属于抽象装饰者，装饰者用于装饰组件，为组件提供额外的功能。例如BufferedInputStream为FileInputStream提供缓存的功能。<br>
+<img src="https://PaIn22152.github.io/post-images/1630319279502.png" alt="" loading="lazy"><br>
+实例化一个具有缓存功能的字节流对象时，只需要在FileInputStream对象上再套一层BufferedInputStream对象即可。<br>
+DataInputStream装饰者提供了对更多数据类型进行输入的操作，比如int、double等基本类型。</p>
+<pre><code class="language-java">FileInputStream fileInputStream = new FileInputStream(filePath);
+BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+</code></pre>
+<p>2.3 字符操作<br>
+编码与解码<br>
+编码就是把字符串转换为字节，而解码是把字节重新组合成字符。如果编码和解码过程使用不同的编码方式，那么就会出现乱码。<br>
+GBK编码中，中文字符占2个字节，英文字符占1个字节；<br>
+UTF-8编码中，中文字符占3个字节，英文字符占1个字节；<br>
+UTF-16be编码中，中文和英文字符都占2个字节。UTF-16be中的be指的是Big Endian，也就是大端。相应地也有UTF-16le，le指的是Little Endian，也就是小端。<br>
+Java的内存编码使用双字节编码UTF-16be，这不是指Java只支持这一种编码方式，而是说char这种类型使用UTF-16be进行编码。char类型占16位，也就是两个字节，Java使用这种双字节编码是为了让一个中文或者一个英文都能使用一个char来存储。</p>
+<p>String的编码方式<br>
+String可以看成一个字符序列，可以指定一个编码方式将它编码为字节序列，也可以指定一个编码方式将一个字节序列解码为String。</p>
+<pre><code class="language-java">String str1 = &quot;中文&quot;;
+byte[] bytes = str1.getBytes(&quot;UTF-8&quot;);
+String str2 = new String(bytes, &quot;UTF-8&quot;);
+System.out.println(str2);
+</code></pre>
+<p>在调用无参数getBytes()方法时，默认的编码方式不是UTF-16be。双字节编码的好处是可以使用一个char存储中文和英文，而将String转为bytes[]字节数组就不需要这个好处，因此也就不再需要双字节编码。getBytes()的默认编码方式与平台有关，一般为UTF-8。</p>
+<pre><code class="language-java">byte[] bytes = str1.getBytes();
+</code></pre>
+<p>Reader和Writer<br>
+不管是磁盘还是网络传输，最小的存储单元都是字节，而不是字符。但是在程序中操作的通常是字符形式的数据，因此需要提供对字符进行操作的方法。<br>
+InputStreamReader实现从字节流解码成字符流；<br>
+OutoutStreamWriter实现字符流编码成字节流。<br>
+下面的代码，实现了逐行输出文本文件的内容</p>
+<pre><code class="language-java">public static void readFileContent(String filePath) throws IOException {
+
+    FileReader fileReader = new FileReader(filePath);
+    BufferedReader bufferedReader = new BufferedReader(fileReader);
+
+    String line;
+    while ((line = bufferedReader.readLine()) != null) {
+        System.out.println(line);
+    }
+
+    // 装饰者模式使得 BufferedReader 组合了一个 Reader 对象
+    // 在调用 BufferedReader 的 close() 方法时会去调用 Reader 的 close() 方法
+    // 因此只要一个 close() 调用即可
+    bufferedReader.close();
+}
+</code></pre>
+<p>2.4 对象操作<br>
+序列化<br>
+序列化就是将一个对象转换成字节序列，方便存储和传输。<br>
+序列化：ObjectOutputStream.writeObject()<br>
+反序列化：ObjectInputStream.readObject()<br>
+不会对静态变量进行序列化，因为序列化只是保存对象的状态，静态变量属于类的状态。</p>
+<p>Serializable<br>
+序列化的类需要实现Serializable接口，它只是一个标准，没有任何方法需要实现，但是如果不去实现它就进行序列化，会抛出异常。</p>
+<p>transient<br>
+transient关键字修饰的属性，不会被序列化。比如ArrayList中存储数据的数组elementData是用transient修饰的，因为这个数组是动态扩展的，并不是所有的空间都被使用，因此不需要所有的内容都被序列化。通过重写序列化的反序列化方法，使得可以只序列化数组中有内容的那部分数据。</p>
+<pre><code class="language-java">private transient Object[] elementData;
+</code></pre>
+<p>2.5 网络操作<br>
+Java中的网络支持：<br>
+InetAddress：用于表示网络上的硬件资源，即IP地址；<br>
+URL：统一资源定位符；<br>
+Sockets：使用TCP协议实现网络通信；<br>
+Datagram：使用UDP协议实现网络通信。</p>
+<p>InetAddress<br>
+没有公有的构造函数，只能通过静态方法来创建实例。</p>
+<pre><code class="language-java">InetAddress.getByName(String host);
+InetAddress.getByAddress(byte[] address);
+</code></pre>
+<p>URL<br>
+可以直接从URL中读取字节流数据。</p>
+<pre><code class="language-java">public static void main(String[] args) throws IOException {
+
+    URL url = new URL(&quot;http://www.baidu.com&quot;);
+
+    /* 字节流 */
+    InputStream is = url.openStream();
+
+    /* 字符流 */
+    InputStreamReader isr = new InputStreamReader(is, &quot;utf-8&quot;);
+
+    /* 提供缓存功能 */
+    BufferedReader br = new BufferedReader(isr);
+
+    String line;
+    while ((line = br.readLine()) != null) {
+        System.out.println(line);
+    }
+
+    br.close();
+}
+</code></pre>
+<p>Sockets<br>
+ServerSocket：服务器端类<br>
+Socket：客户端类<br>
+服务器和客户端通过InputStream和OutoutStream进行输入输出。<br>
+<img src="https://PaIn22152.github.io/post-images/1630322448074.png" alt="" loading="lazy"></p>
+<p>Datagram<br>
+DatagramSocket：通信类<br>
+DatagramPacket：数据包类</p>
+<p>2.6 NIO<br>
+NIO即New IO，新的输入/输出，是在JDK4中引入的，弥补了原来的IO的不足，提供了高速的，面向块的IO。</p>
+<p>流与块<br>
+IO和NIO最重要的区别是数据打包和传输的方式，IO以流的方式处理数据，而NIO以块的方式处理数据。<br>
+面向流的IO一次处理一个字节数据：一个输入流产生一个字节数据，一个输出流消费一个字节数据。为流式数据创建过滤器非常容易，链接几个过滤器，以便每个过滤器只负责复杂处理机制的一部分。不利的一面是，面向流的IO通常相对慢。<br>
+面向块的IO一次处理一个数据块，按块处理数据比按流处理数据要快得多。但是面向块的IO缺少一些面向流的IO所具有的优雅性和简单性。<br>
+IO包和NIO已经很好地集成了，java.io.*已经以NIO为基础重新实现了，所以现在它可以利用NIO的一些特性。例如，java.io.*包中的一些类包含以块的形式读写数据的方法，这使得即使在面向流的系统中，处理速度也会更快。</p>
+<p>通道与缓冲区<br>
+通道<br>
+通道Channel是对原IO包中的流的模拟，可以通过它读取和写入数据。<br>
+通道与流的不同之处在于，流只能在一个方向上移动（一个流必须是InputStream或者OutputStream的子类），而通道是双向的，可以用于读、写或者同时读写。<br>
+通道包括以下类型：<br>
+FileChannel：从文件中读写数据；<br>
+DatagramChannel：通过UDP读写网络中数据；<br>
+SocketChannel：通过TCP读写网络中数据；<br>
+ServerSocketChannel：可以监听新进来的TCP连接，对每一个新进来的连接都会创建一个SocketChannel。</p>
+<p>缓冲区<br>
+发送给一个通道的所有数据都必须首先放到缓冲区中，同样地，从通道中读取的任何数据都要先读到缓冲区中。也就是说，不会直接对通道进行读写数据，而是要先经过缓冲区。<br>
+缓冲区实质上是一个数组，但它不仅仅是一个数组。缓冲区提供了对数据的结构化访问，而且还可以跟踪系统的读写进程。<br>
+缓冲区状态变量：<br>
+capacity：最大容量；<br>
+position：当前已经读写的字节数；<br>
+limit：还可以读写的字节数；<br>
+状态变量的改变过程举例：<br>
+①新建一个大小为8个字节的缓冲区，此时position为0，而limit=capacity=8。capacity变量不会改变，下面的讨论会忽略他。<br>
+<img src="https://PaIn22152.github.io/post-images/1630326598614.png" alt="" loading="lazy"><br>
+②从输入通道中读取5个字节数据写入缓冲区，此时position为5，limit保持不变。<br>
+<img src="https://PaIn22152.github.io/post-images/1630326615037.png" alt="" loading="lazy"><br>
+③在将缓冲区的数据写到输出通道之前，需要先调用flip()方法，这个方法将limit设置为当前position，并将position设置为0。<br>
+<img src="https://PaIn22152.github.io/post-images/1630326636968.png" alt="" loading="lazy"><br>
+④从缓冲区中取4个字节到输出缓冲中，此时position设为4。<br>
+<img src="https://PaIn22152.github.io/post-images/1630326653782.png" alt="" loading="lazy"><br>
+⑤最后需要调用clear()方法来清空缓冲区，此时position和limit都被设置为最初位置。<br>
+<img src="https://PaIn22152.github.io/post-images/1630326673320.png" alt="" loading="lazy"></p>
+<p>文件NIO实例<br>
+以下展示了使用NIO快速复制文件的实例：</p>
+<pre><code class="language-java">public static void fastCopy(String src, String dist) throws IOException {
+
+    /* 获得源文件的输入字节流 */
+    FileInputStream fin = new FileInputStream(src);
+
+    /* 获取输入字节流的文件通道 */
+    FileChannel fcin = fin.getChannel();
+
+    /* 获取目标文件的输出字节流 */
+    FileOutputStream fout = new FileOutputStream(dist);
+
+    /* 获取输出字节流的文件通道 */
+    FileChannel fcout = fout.getChannel();
+
+    /* 为缓冲区分配 1024 个字节 */
+    ByteBuffer buffer = ByteBuffer.allocateDirect(1024);
+
+    while (true) {
+
+        /* 从输入通道中读取数据到缓冲区中 */
+        int r = fcin.read(buffer);
+
+        /* read() 返回 -1 表示 EOF */
+        if (r == -1) {
+            break;
+        }
+
+        /* 切换读写 */
+        buffer.flip();
+
+        /* 把缓冲区的内容写入输出文件中 */
+        fcout.write(buffer);
+
+        /* 清空缓冲区 */
+        buffer.clear();
+    }
+}
+</code></pre>
+<p>选择器<br>
+NIO常常被叫做非阻塞IO，主要是因为NIO在网络通信中的非阻塞特性被广泛使用。<br>
+NIO实现了IO多路复用中的Reactor模型，一个线程Thread使用一个选择器Selector通过轮询的方式去监听多个通道Channel上的事件，从而让一个线程就可以处理多个事件。<br>
+通过配置监听的通道Channel为非阻塞，那么当Channel上的IO事件还未到达时，就不会进入阻塞状态一直等待，而是继续轮询其他Channel，找到IO事件已经到达的Channel执行。<br>
+因为创建和切换线程的开销很大，因此使用一个线程来处理多个事件，而不是一个线程处理一个事件，对于IO密集型的应用具有很好的性能。<br>
+需要注意的是，只有套接字Channel才能配置为非阻塞，而FileChannel不能，因为FileChannel配置非阻塞没有意义。<br>
+<img src="https://PaIn22152.github.io/post-images/1630377209031.png" alt="" loading="lazy"></p>
+<p>创建选择器代码</p>
+<pre><code class="language-java">Selector selector = Selector.open();
+</code></pre>
+<p>将通道注册到选择器上的代码</p>
+<pre><code class="language-java">ServerSocketChannel ssChannel = ServerSocketChannel.open();
+ssChannel.configureBlocking(false);
+ssChannel.register(selector, SelectionKey.OP_ACCEPT);
+</code></pre>
+<p>通道必须配置为非阻塞模式，否则使用选择器就没有任何意义了，因为如果通道在某个事件上被阻塞，那么服务器就不能响应其他事件，必须等待这个事件处理完毕才能去处理其他事件，显然这和选择器的作用背道而驰。<br>
+在将通道注册到选择器上时，还需要指定注册的具体事件，主要有以下几类：<br>
+SelectionKey.OP_CONNECT  SelectionKey.OP_ACCEPT  SelectionKey.OP_READ  SelectionKey.OP_WRITE。</p>
+<p>使用select()来监听到达的事件，他会一直阻塞直到有至少一个事件到达。</p>
+<pre><code class="language-java">int num = selector.select();
+</code></pre>
+<p>获取到达的事件</p>
+<pre><code class="language-java">Set&lt;SelectionKey&gt; keys = selector.selectedKeys();
+Iterator&lt;SelectionKey&gt; keyIterator = keys.iterator();
+while (keyIterator.hasNext()) {
+    SelectionKey key = keyIterator.next();
+    if (key.isAcceptable()) {
+        // ...
+    } else if (key.isReadable()) {
+        // ...
+    }
+    keyIterator.remove();
+}
+</code></pre>
+<p>事件循环<br>
+因为一次select()调用不能处理完所有的事件，并且服务器端有可能需要一直监听事件，因此服务器端处理事件的代码一般放在一个死循环内。</p>
+<pre><code class="language-java">while (true) {
+    int num = selector.select();
+    Set&lt;SelectionKey&gt; keys = selector.selectedKeys();
+    Iterator&lt;SelectionKey&gt; keyIterator = keys.iterator();
+    while (keyIterator.hasNext()) {
+        SelectionKey key = keyIterator.next();
+        if (key.isAcceptable()) {
+            // ...
+        } else if (key.isReadable()) {
+            // ...
+        }
+        keyIterator.remove();
+    }
+}
+</code></pre>
+<p>套接字NIO实例</p>
+<pre><code class="language-java">public class NIOServer {
+
+    public static void main(String[] args) throws IOException {
+
+        Selector selector = Selector.open();
+
+        ServerSocketChannel ssChannel = ServerSocketChannel.open();
+        ssChannel.configureBlocking(false);
+        ssChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+        ServerSocket serverSocket = ssChannel.socket();
+        InetSocketAddress address = new InetSocketAddress(&quot;127.0.0.1&quot;, 8888);
+        serverSocket.bind(address);
+
+        while (true) {
+
+            selector.select();
+            Set&lt;SelectionKey&gt; keys = selector.selectedKeys();
+            Iterator&lt;SelectionKey&gt; keyIterator = keys.iterator();
+
+            while (keyIterator.hasNext()) {
+
+                SelectionKey key = keyIterator.next();
+
+                if (key.isAcceptable()) {
+
+                    ServerSocketChannel ssChannel1 = (ServerSocketChannel) key.channel();
+
+                    // 服务器会为每个新连接创建一个 SocketChannel
+                    SocketChannel sChannel = ssChannel1.accept();
+                    sChannel.configureBlocking(false);
+
+                    // 这个新连接主要用于从客户端读取数据
+                    sChannel.register(selector, SelectionKey.OP_READ);
+
+                } else if (key.isReadable()) {
+
+                    SocketChannel sChannel = (SocketChannel) key.channel();
+                    System.out.println(readDataFromSocketChannel(sChannel));
+                    sChannel.close();
+                }
+
+                keyIterator.remove();
+            }
+        }
+    }
+
+    private static String readDataFromSocketChannel(SocketChannel sChannel) throws IOException {
+
+        ByteBuffer buffer = ByteBuffer.allocate(1024);
+        StringBuilder data = new StringBuilder();
+
+        while (true) {
+
+            buffer.clear();
+            int n = sChannel.read(buffer);
+            if (n == -1) {
+                break;
+            }
+            buffer.flip();
+            int limit = buffer.limit();
+            char[] dst = new char[limit];
+            for (int i = 0; i &lt; limit; i++) {
+                dst[i] = (char) buffer.get(i);
+            }
+            data.append(dst);
+            buffer.clear();
+        }
+        return data.toString();
+    }
+}
+
+
+public class NIOClient {
+
+    public static void main(String[] args) throws IOException {
+        Socket socket = new Socket(&quot;127.0.0.1&quot;, 8888);
+        OutputStream out = socket.getOutputStream();
+        String s = &quot;hello world&quot;;
+        out.write(s.getBytes());
+        out.close();
+    }
+}
+
+</code></pre>
+<p>内存映射文件<br>
+内存映射文件IO是一种读和写文件数据的方法，它可以比常规的基于流或者基于通道的IO快很多。<br>
+向内存映射文件写入可能是危险的，只是改变数组的单个元素这样的简单操作，就可能会直接修改磁盘上的文件。修改数据与将数据保存到磁盘是没有分开的。<br>
+下面的代码行将文件的前1024个字节映射到内存中，map()方法返回一个MappedByteBuffer，它是ByteBuffer的子类。因此，可以像使用其他任何ByteBuffer一样使用新映射的缓冲区，操作系统会在需要时负责执行映射。</p>
+<pre><code class="language-java">MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_WRITE, 0, 1024);
+</code></pre>
+<p>对比<br>
+NIO和普通IO的区别主要有：<br>
+NIO是非阻塞的；<br>
+NIO面向块，IO面向流。</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://PaIn22152.github.io/post/java-rong-qi/">
+                  <h3 class="post-title">
+                    Java容器
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>

@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" >
+
+<title>Java容器 | Payne的小站</title>
+<meta name="description" content="克己、积累、坚持、格局、全力以赴
+对过程的关注要多于对结果的关注">
+
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+<link rel="shortcut icon" href="https://PaIn22152.github.io/favicon.ico">
+<link rel="stylesheet" href="https://PaIn22152.github.io/styles/main.css">
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://cdn.bootcss.com/highlight.js/9.12.0/highlight.min.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+
+
+  </head>
+  <body>
+    <div id="app" class="main">
+
+      <div class="sidebar" :class="{ 'full-height': menuVisible }">
+  <div class="top-container" data-aos="fade-right">
+    <div class="top-header-container">
+      <a class="site-title-container" href="https://PaIn22152.github.io">
+        <img src="https://PaIn22152.github.io/images/avatar.png" class="site-logo">
+        <h1 class="site-title">Payne的小站</h1>
+      </a>
+      <div class="menu-btn" @click="menuVisible = !menuVisible">
+        <div class="line"></div>
+      </div>
+    </div>
+    <div>
+      
+        
+          <a href="/" class="site-nav">
+            首页
+          </a>
+        
+      
+        
+          <a href="/archives" class="site-nav">
+            归档
+          </a>
+        
+      
+        
+          <a href="/tags" class="site-nav">
+            标签
+          </a>
+        
+      
+        
+          <a href="/post/about" class="site-nav">
+            关于
+          </a>
+        
+      
+    </div>
+  </div>
+  <div class="bottom-container" data-aos="flip-up" data-aos-offset="0">
+    <div class="site-description">
+      克己、积累、坚持、格局、全力以赴
+对过程的关注要多于对结果的关注
+    </div>
+    <div class="site-footer">
+      Powered by <a href="https://github.com/getgridea/gridea" target="_blank">Gridea</a>
+    </div>
+  </div>
+</div>
+
+
+      <div class="main-container">
+        <div class="content-container" data-aos="fade-up">
+          <div class="post-detail">
+            <h2 class="post-title">Java容器</h2>
+            <div class="post-date">2021-08-25</div>
+            
+            <div class="post-content">
+              <p><a href="https://toc.codepie.fun/">在线目录生成工具</a></p>
+<h1 id="目录">目录</h1>
+<ul>
+<li><a href="#head1"> 0.前言</a></li>
+<li><a href="#head2"> 1.概览</a>
+<ul>
+<li><a href="#head3">1.1 Set</a></li>
+<li><a href="#head4">1.2 List</a></li>
+<li><a href="#head5">1.3 Queue</a></li>
+<li><a href="#head6">1.4 Map</a></li>
+</ul>
+</li>
+<li><a href="#head7">2 常用容器分析</a>
+<ul>
+<li><a href="#head8">2.1 ArrayList</a>
+<ul>
+<li><a href="#head9"> 继承关系</a></li>
+<li><a href="#head10"> 字段</a></li>
+<li><a href="#head11"> 构造方法</a></li>
+<li><a href="#head12"> 添加</a></li>
+<li><a href="#head13"> 删除</a></li>
+<li><a href="#head14"> 查找</a></li>
+<li><a href="#head15"> 序列化</a></li>
+<li><a href="#head16"> Fail-Fast</a></li>
+</ul>
+</li>
+<li><a href="#head17">2.2 CopyOnWriteArrayList</a>
+<ul>
+<li><a href="#head18"> 添加</a></li>
+<li><a href="#head19"> 删除</a></li>
+<li><a href="#head20"> 使用场景</a></li>
+</ul>
+</li>
+<li><a href="#head21">2.3 HashMap</a>
+<ul>
+<li><a href="#head22"> 继承关系</a></li>
+<li><a href="#head23"> 存储结构</a></li>
+<li><a href="#head24"> 字段</a></li>
+<li><a href="#head25"> 功能实现</a>
+<ul>
+<li><a href="#head26"> 1.确定哈希桶数组索引位置</a></li>
+<li><a href="#head27"> 2.分析HashMap的put方法流程</a></li>
+<li><a href="#head28"> 扩容机制</a></li>
+</ul>
+</li>
+<li><a href="#head29"> 小结</a></li>
+</ul>
+</li>
+<li><a href="#head30">2.4 ConcurrentHashMap</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="span-idhead1-0前言span"><span id="head1"> 0.前言</span></h1>
+<p>个人学习、整理和记录Java容器相关知识点用。其中大部分内容来自以下地址，表示感谢。<br>
+<a href="https://www.cyc2018.xyz/Java/Java%20%E5%AE%B9%E5%99%A8.html#%E4%B8%80%E3%80%81%E6%A6%82%E8%A7%88">CS-Notes</a><br>
+<a href="https://www.infoq.cn/article/9av7tvtqsyrx7dneezmn">InfoQ-java集合之ArrayList源码解读</a><br>
+<a href="https://tech.meituan.com/2016/06/24/java-hashmap.html">美团技术团队-Java 8系列之重新认识HashMap</a></p>
+<h1 id="span-idhead2-1概览span"><span id="head2"> 1.概览</span></h1>
+<p>容器主要包括Collection和Map两种，Collection存储着对象的集合，而Map存储这键值对（两个对象）的映射表。<br>
+<img src="https://PaIn22152.github.io/post-images/1629886896587.png" alt="" loading="lazy"><br>
+<img src="https://PaIn22152.github.io/post-images/1629886921478.png" alt="" loading="lazy"></p>
+<h2 id="span-idhead311-setspan"><span id="head3">1.1 Set</span></h2>
+<p>TreeSet：基于红黑树实现，支持有序性操作，例如根据一个范围查找元素的操作。但是查找效率不如HashSet，HashSet查找时间复杂度为O(1)a，TreeSet复杂度为O(logN)。<br>
+HashSet：基于哈西表实现，支持快速查找，但不支持有序性操作。并且失去了元素的插入顺序信息，也就是说使用Iterator遍历HashSet得到的结果是不确定的。<br>
+LinkedHashSet：具有HashSet的查找效率，并且内部使用双向链表维护元素的插入顺序。</p>
+<h2 id="span-idhead412-listspan"><span id="head4">1.2 List</span></h2>
+<p>ArrayList：基于动态数组实现，支持随机访问。适用于查询多，删除插入少的场景。<br>
+Vector：和ArrayList类似，但是它是线程安全的。<br>
+CopyOnWriteArrayList：读写分离。<br>
+LinkedList：基于双向链表实现，只能顺序访问，但是可以快速地在链表中间插入和删除元素。不仅如此，LinkedList还可以用作栈、队列和双向队列。适用于查询少，删除插入多的场景。</p>
+<h2 id="span-idhead513-queuespan"><span id="head5">1.3 Queue</span></h2>
+<p>LinkedList：可以用它来实现双向队列。<br>
+PriorityQueue：基于堆结构实现，可以用来实现优先队列。</p>
+<h2 id="span-idhead614-mapspan"><span id="head6">1.4 Map</span></h2>
+<p>TreeMap：基于红黑树实现。<br>
+HashMap：基于哈希表实现。<br>
+ConcurrentHashMap：和HashMap类似，但是是线程安全的。<br>
+LinkedHashMap：使用双向链表来维护元素的顺序，顺序为插入顺序或者最近最少使用顺序（LRU）。</p>
+<h1 id="span-idhead72-常用容器分析span"><span id="head7">2 常用容器分析</span></h1>
+<p>默认基于Jdk1.8。</p>
+<h2 id="span-idhead821-arraylistspan"><span id="head8">2.1 ArrayList</span></h2>
+<h3 id="span-idhead9-继承关系span"><span id="head9"> 继承关系</span></h3>
+<pre><code class="language-java">public class ArrayList&lt;E&gt; extends AbstractList&lt;E&gt;
+        implements List&lt;E&gt;, RandomAccess, Cloneable, java.io.Serializable
+{   }
+</code></pre>
+<p><img src="https://PaIn22152.github.io/post-images/1629891442262.webp" alt="" loading="lazy"><br>
+实现了RandomAccess接口，这是一个标记接口，官方解释是只要List实现了这个接口，就能支持随机访问，随机访问指的是可以使用索引遍历，即用for循环遍历数据，比使用iterator遍历数据更高效。<br>
+实现了Cloneable接口，这也是一个标记接口，表示该对象能被clone，即可以使用Object.clone()方法。如果没有实现Cloneable的类对象调用clone()方法会抛出CloneNotSupportException。且是深拷贝。<br>
+实现了Serializable接口，这也是一个标记接口，用于标记实现类可以序列化。</p>
+<h3 id="span-idhead10-字段span"><span id="head10"> 字段</span></h3>
+<p>ArrayList的字段以及说明如下：</p>
+<pre><code class="language-java">    /**
+    * 序列化版本标识，序列化和反序列化时使用
+    */
+    private static final long serialVersionUID = 8683452581122892189L;
+
+    /**
+     * 默认的数据容量
+     */
+    private static final int DEFAULT_CAPACITY = 10;
+
+    /**
+     * 用于ArrayList空实例的共享空数组实例
+     */
+    private static final Object[] EMPTY_ELEMENTDATA = {};
+
+    /**
+      * 用于默认大小空实例的共享空数组实例。
+      * 我们将DEFAULTCAPACITY_EMPTY_ELEMENTDATA和EMPTY_ELEMENTDATA区别开来
+      * 以便在添加第一个元素时知道要膨胀多少。
+     */
+    private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};
+
+    /**
+     * 存放元素的数组
+     * 备注：字段不设置为私有，是为了方便内部类的访问
+     * 思考：为什么不是E[]呢？
+     */
+    transient Object[] elementData; 
+
+    /**
+     * 数组元素个数
+     */
+    private int size;
+
+</code></pre>
+<h3 id="span-idhead11-构造方法span"><span id="head11"> 构造方法</span></h3>
+<p>有三个构造方法</p>
+<pre><code class="language-java">//1
+// 创建一个容量为10的ArrayList
+public ArrayList() {
+        this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+    }
+
+//2
+/**
+    * 1、创建ArrayList强制使用范型，避免使用原生类型引起类型不安全的问题
+    * 2、java7之后的jdk增强了类型推导，建议使用new ArrayList&lt;&gt;()，最好不使用new ArrayList&lt;E&gt;
+    */
+    public ArrayList(int initialCapacity) {
+        if (initialCapacity &gt; 0) {
+            this.elementData = new Object[initialCapacity];
+        } else if (initialCapacity == 0) {
+            this.elementData = EMPTY_ELEMENTDATA;
+        } else {
+            throw new IllegalArgumentException(&quot;Illegal Capacity: &quot;+
+                                               initialCapacity);
+        }
+    }
+
+//3
+ // 使用Collection的实现比如Set,List创建一个ArrayList
+     // 通常是Collection的实现进行相互转换
+    public ArrayList(Collection&lt;? extends E&gt; c) {
+        elementData = c.toArray();
+        if ((size = elementData.length) != 0) {
+            // c.toArray might (incorrectly) not return Object[] (see 6260652)
+            if (elementData.getClass() != Object[].class)
+                elementData = Arrays.copyOf(elementData, size, Object[].class);
+        } else {
+            // replace with empty array.
+            this.elementData = EMPTY_ELEMENTDATA;
+        }
+    }
+</code></pre>
+<h3 id="span-idhead12-添加span"><span id="head12"> 添加</span></h3>
+<p>有两种添加方式：单个添加（添加特定元素）和批量添加（添加集合）。<br>
+单个添加的流程如图：<br>
+<img src="https://PaIn22152.github.io/post-images/1629892273121.webp" alt="" loading="lazy"><br>
+相关源码如下：</p>
+<pre><code class="language-java">/**
+  * 在ArrayList结尾添加元素
+  */
+public boolean add(E e) {
+    // 根据size处理容量
+    ensureCapacityInternal(size + 1); 
+    elementData[size++] = e;
+    return true;
+}
+private void ensureCapacityInternal(int minCapacity) {
+    // 如果使用ArrayList()创建，默认容量=DEFAULT_CAPACITY=10
+    if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+        minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+    }
+    // minCapacity为此时elementData必须的最小长度
+    ensureExplicitCapacity(minCapacity);
+}
+private void ensureExplicitCapacity(int minCapacity) {
+    // 修改次数+1，用于fail-fast处理
+    modCount++;
+    // 如果minCapacity大于elementData的长度，则进行扩容处理
+    if (minCapacity - elementData.length &gt; 0)
+        // 扩容，可能会引起溢出问题
+        grow(minCapacity);
+}
+// ArrayList动态扩容机制的核心
+private void grow(int minCapacity) {
+    // 可能存在整型溢出
+    int oldCapacity = elementData.length;
+    // 容量默认扩大1.5倍
+    int newCapacity = oldCapacity + (oldCapacity &gt;&gt; 1);
+    if (newCapacity - minCapacity &lt; 0)
+        // 可能1：newCapacity&lt;0整型溢出
+        // 可能2：newCapacity&lt;minCapacity
+        newCapacity = minCapacity;
+    if (newCapacity - MAX_ARRAY_SIZE &gt; 0)
+        newCapacity = hugeCapacity(minCapacity);
+    // 数组深拷贝
+    elementData = Arrays.copyOf(elementData, newCapacity);
+}
+
+private static int hugeCapacity(int minCapacity) {
+    if (minCapacity &lt; 0) 
+        // 说明已经整型溢出
+        throw new OutOfMemoryError();
+    return (minCapacity &gt; MAX_ARRAY_SIZE) ?
+        Integer.MAX_VALUE :
+        MAX_ARRAY_SIZE;
+}
+/**
+  * 在ArrayList特定位置添加单个元素
+  * 思考：add(E e)没有调用add(int index, E element)，个人猜测是出于性能的考虑
+  * 毕竟基于数组进行插入操作可能存在性能问题
+  */
+public void add(int index, E element) {
+    // 检查位置是否合法
+    rangeCheckForAdd(index);
+
+    // 跟add(E e)中处理方式类似
+    ensureCapacityInternal(size + 1); 
+    // 将elementData中位置为index位置及其后面的元素都向后移动一个下标（底层是native方法，使用cpp直接操作内存。）
+    System.arraycopy(elementData, index, elementData, index + 1,
+                     size - index);
+    elementData[index] = element;
+    size++;
+}
+
+</code></pre>
+<p>添加元素时，先使用ensureCapacityInternal()方法来保证容量足够，如果不够，使用grow()方法进行扩容，新容量的大小约为老容量的1.5倍。扩容操作需要调用Arrays.copyOf()把原数组整个复制到新数组中，这个操作代价很高，因此最好在创建ArrayList对象时就指定大概的容量大小，减少扩容操作的次数。</p>
+<p>批量添加的相关代码如下：</p>
+<pre><code class="language-java">    //
+    public boolean addAll(Collection&lt;? extends E&gt; c) {
+        // 集合转化成数组
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        // 跟add(E e)中处理方式类似
+        ensureCapacityInternal(size + numNew); 
+        // 将集合内的元素复制到elementData中，覆盖[size, size+numNew)的元素
+        System.arraycopy(a, 0, elementData, size, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+    public boolean addAll(int index, Collection&lt;? extends E&gt; c) {
+        // 检查位置是否合法
+        rangeCheckForAdd(index);
+
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew); 
+
+        int numMoved = size - index;
+        if (numMoved &gt; 0)
+            // 将elementData中位置为index及其以后的元素都向后移动numNew个位置
+            System.arraycopy(elementData, index, elementData, index + numNew, numMoved);
+
+        // 将集合内的元素复制到elementData中，覆盖[index, index+numNew)的元素 
+        System.arraycopy(a, 0, elementData, index, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+
+</code></pre>
+<h3 id="span-idhead13-删除span"><span id="head13"> 删除</span></h3>
+<p>删除可以分为四种：单个删除（删除特定元素、特定下标）、批量删除（删除集合中的元素）、批量保留（批量删除除集合外的元素）、清空。<br>
+单个删除，相关代码如下：</p>
+<pre><code class="language-java">    // 删除ArrayList中第一次出现的特定元素
+    public boolean remove(Object o) {
+        if (o == null) {
+            for (int index = 0; index &lt; size; index++)
+                if (elementData[index] == null) {
+                    fastRemove(index);
+                    return true;
+                }
+        } else {
+            for (int index = 0; index &lt; size; index++)
+                // 比较对象时依赖equals方法
+                // 因此类型变量E对应的类注意重写equlas方法
+                // 重写时注意遵守规范，具体参考effective java第三版的第10、11两条规则
+                if (o.equals(elementData[index])) {
+                    fastRemove(index);
+                    return true;
+                }
+        }
+        return false;
+    }
+    // 根据下标删除元素
+    private void fastRemove(int index) {
+        modCount++;
+        int numMoved = size - index - 1;
+        if (numMoved &gt; 0)
+            // 将elemenData中index+1及其后面的元素都向前移动一个下标
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        // 根据上一步的操作, size-1位置的对象向前移动了一个下标
+        // 如果没有elementData[--size]==null，可能会导致内存泄漏
+        // 试想，ArrayList被add了100个对象，然后被remove了100次。按照GC的机制来说，100个对象应该可以被GC掉（假设没有对象对象），但是由于还存在ArrayList的实例引用，对应的100个对象就无法删除
+        elementData[--size] = null; 
+    }
+
+    // 根据下标删除元素
+    // 注意：java5后引入自动装箱、拆箱的机制，因此产生了一个有趣的问题：
+    // 当类型变量为Integer的ArrayList调用remove时，可能调用remove(Object)，也可能调用remove(Index)
+    // 一定要注意测试是否符合自己的预期
+    public E remove(int index) {
+        rangeCheck(index);
+
+        modCount++;
+        E oldValue = elementData(index);
+
+        int numMoved = size - index - 1;
+        // 如果被删除元素不是ArrayList的最后一个元素
+        if (numMoved &gt; 0)
+             // 对应下标之后的元素向前移动一个下标
+            System.arraycopy(elementData, index+1, elementData, index,
+                             numMoved);
+        // 最后一个元素只为null，方便GC
+        elementData[--size] = null; 
+
+        return oldValue;
+    }
+
+</code></pre>
+<p>需要调用System.arraycopy()将index+1后面的元素都复制到index位置上，该操作的时间复杂度为O(N)，可以看到ArrayList删除元素的代价是比较高的。</p>
+<p>批量删除和清空</p>
+<pre><code class="language-java">    // 批量删除ArrayList和集合c都存在的元素
+    public boolean removeAll(Collection&lt;?&gt; c) {
+        // 非空校验
+        Objects.requireNonNull(c);
+        // 批量删除
+        return batchRemove(c, false);
+    }
+
+    private boolean batchRemove(Collection&lt;?&gt; c, boolean complement){
+        final Object[] elementData = this.elementData;
+        int r = 0, w = 0;
+        boolean modified = false;
+        try {
+            for (; r &lt; size; r++)
+                if (c.contains(elementData[r]) == complement)
+                    // 把需要保留的元素前置
+                    elementData[w++] = elementData[r];
+        } finally {
+            // 即使c.contains抛异常，也要保持跟AbstractCollection行为的兼容性
+            // 备注：ArrayList重写了AbstractCollection中的removeAll方法，removeAll调用了batchRemove
+            if (r != size) {
+                // 备注1：可能是上面的for循环出现了异常
+                // 备注2：可能是其它线程添加了元素。
+                System.arraycopy(elementData, r,
+                                 elementData, w,
+                                 size - r);
+                w += size - r;
+            }
+            if (w != size) {
+                for (int i = w; i &lt; size; i++)
+                    // 跟fastRemove(int index)里面的操作类似，防止内存泄漏
+                    elementData[i] = null;
+                // 思考：为什么addAll的modCount+1，而removeAll的modCoun+size-w
+                // 个人以为modCount只是做标记做了结构的修改并且用来做校验。
+                // 因此+1，+2 +size-w并没有本质区别
+                modCount += size - w;
+                size = w;
+                modified = true;
+            }
+        }
+        return modified;
+    }
+
+ // 思考：上面是按照元素进行批量删除，如何按照下标区间进行批量删除呢？
+批量保留
+
+    public boolean retainAll(Collection&lt;?&gt; c) {
+        Objects.requireNonNull(c);
+        // 批量保留
+        return batchRemove(c, true);
+    }
+
+    public void clear() {
+        modCount++;
+        // 清空ArrayList里面所有的元素
+        for (int i = 0; i &lt; size; i++)
+            elementData[i] = null;
+
+        size = 0;
+    }
+
+</code></pre>
+<h3 id="span-idhead14-查找span"><span id="head14"> 查找</span></h3>
+<pre><code class="language-java">    // 返回元素第一次出现的下标
+    public int indexOf(Object o) {
+        if (o == null) {
+            for (int i = 0; i &lt; size; i++)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = 0; i &lt; size; i++)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1;
+    }
+    // 返回最后一次出现的位置
+    public int lastIndexOf(Object o) {
+        if (o == null) {
+            for (int i = size-1; i &gt;= 0; i--)
+                if (elementData[i]==null)
+                    return i;
+        } else {
+            for (int i = size-1; i &gt;= 0; i--)
+                if (o.equals(elementData[i]))
+                    return i;
+        }
+        return -1;
+    }
+
+</code></pre>
+<h3 id="span-idhead15-序列化span"><span id="head15"> 序列化</span></h3>
+<p>ArrayList基于数组实现，并且具有动态扩容特性，因此保存元素的数组不一定都会被使用，所以不用直接序列化elementData，而是根据size序列化包含的元素，忽略数组中的其他位置，提高效率并节省空间，通过使用writeObject() 和 readObject()方法来实现的。</p>
+<pre><code class="language-java">    private void writeObject(java.io.ObjectOutputStream s)
+        throws java.io.IOException{
+        // fail-fast，后续判断是否有并发处理
+        int expectedModCount = modCount;
+        // 序列化没有标记为static、transient的字段，包括size等。
+        s.defaultWriteObject();
+
+        // 没有意义，可以忽略
+        s.writeInt(size);
+
+        // 序列化元素
+        for (int i=0; i&lt;size; i++) {
+            s.writeObject(elementData[i]);
+        }
+
+        if (modCount != expectedModCount) {
+            // ArrayList被并发处理，发生结构性修改
+            throw new ConcurrentModificationException();
+        }
+    }
+    private void readObject(java.io.ObjectInputStream s)
+        throws java.io.IOException, ClassNotFoundException {
+        elementData = EMPTY_ELEMENTDATA;
+
+        // 反序列化没有标记为static、transient的字段，包括size等
+        s.defaultReadObject();
+
+        // 可以忽略，跟writeObject里面的方法对应
+        s.readInt(); 
+
+        if (size &gt; 0) {
+            // 数组扩容
+            ensureCapacityInternal(size);
+
+            Object[] a = elementData;
+            // 反序列化元素并填充到数组中
+            for (int i=0; i&lt;size; i++) {
+                a[i] = s.readObject();
+            }
+        }
+    }
+
+</code></pre>
+<p>保存元素的数组elementData使用transient修饰，该关键字声明数组默认不会被序列化。</p>
+<pre><code class="language-java">transient Object[] elementData; // non-private to simplify nested class access
+</code></pre>
+<h3 id="span-idhead16-fail-fastspan"><span id="head16"> Fail-Fast</span></h3>
+<p>modCount用来记录ArrayList结构发生变化的次数。结构发生变化是指添加或删除至少一个元素的所有操作，或者是调整内部数组的大小，仅仅只是设置元素的值不算结构变化。<br>
+在进行序列化或者迭代等操作时，需要比较操作前后modCount是否改变，如果改变了需要抛出ConcurrentModificationException。</p>
+<h2 id="span-idhead1722-copyonwritearraylistspan"><span id="head17">2.2 CopyOnWriteArrayList</span></h2>
+<p>是一个并发安全的ArrayList，可以做到读写分离。写操作在一个复制的数组上进行，读操作在原始数组上进行，所以能做到读写分离，互不影响。</p>
+<h3 id="span-idhead18-添加span"><span id="head18"> 添加</span></h3>
+<pre><code class="language-java">@Override
+public boolean add(E e) {
+    /**
+     * 增加元素 e 到数组的末尾
+     * 操作步骤:
+     *  1. 获取全局的 reentrantLock
+     *  2. 将原来的 array1 copy 到一个 array.length + 1 的数组 array2 里面
+     *  3. 将 先添加的元素e添加到新数组 array2 的最后一个空间里面 (array2[array2.length - 1] = e)
+     *  4. 将 新数组 array2 赋值给 CopyOnWriteArrayList 中的 array
+     */
+    final ReentrantLock lock = this.lock;
+    lock.lock();                                                    // 1. 获取 全局 lock
+    try{
+        Object[] elements = getArray();                             // 2. 获取原来的数组
+        int len = elements.length;
+        Object[] newElements = Arrays.copyOf(elements, len + 1);    // 3. 新建一个 array2 将原来的数据赋值到这个新建的数组里面
+        newElements[len] = e;                                       // 4. 将 e 赋值给 array2的最后一个空间里面
+        setArray(newElements);                                      // 5. 将新数组 array2 赋值给 CopyOnWriteArrayList 中的 array
+        return true;
+    }finally {
+        lock.unlock();                                              // 6. 释放锁
+    }
+
+}
+
+ @Override
+    public void add(int index, E element) {
+        /**
+         * 将元素 e 插入到数组 指定的索引下标 index 下
+         * 操作步骤:
+         *      1. 获取全局的锁
+         *      2. 获取 CopyOnWriteArrayList 的 array, 及 array.length
+         *      3. 进行参数校验 (index &gt; len || index &lt; 0) 则直接抛异常 -&gt; 说明元素的插入只能在 0 - array.length 之间(包含两个端点)
+         *      4. 获取插入点 index 与 array.length 之间的步长, 进行分类讨论
+         *          1) 插入的数据正好在 原array数组的后一个节点 (numMoved = len), 则直接新建一个 array, 将原来的 array copy 过来
+         *          2) 插入的 index 满足 0 &lt;= index &lt;= len - 1, 则新建一个数组, 原来 o -&gt; index(index不包含) 拷贝来, index后面的数据拷贝到新数组的 index + 1 的空间
+         *      5. 将 e 设置到 新 array 的 index 位置
+         *      6. 将 新 array 设置到 CopyOnWriteArrayList 里面
+         */
+        final ReentrantLock lock = this.lock;
+        lock.lock();                                                                    // 1. 获取全局的锁
+        try{
+            Object[] elements = getArray();
+            int len = elements.length;
+            if(index &gt; len || index &lt; 0){
+                throw new IndexOutOfBoundsException(&quot;Index: &quot; + index + &quot;, Size:&quot; + len);
+            }
+            Object[] newElements;
+            int numMoved = len - index;
+            if(numMoved == 0){ // 走到这一步, 说明 数据是插入到 oldArray.length(这个值是指下标) 位置上的元素
+                newElements = Arrays.copyOf(elements, len + 1); // 直接拷贝原数组到一个新的 array 数组中, 这个数组的长度是 len + 1
+            }else{
+                newElements = new Object[len + 1];
+                System.arraycopy(elements, 0, newElements, 0, index); // 将原数组 index 前的数组都拷贝到新的数组里面
+                System.arraycopy(elements, index, newElements, index + 1, numMoved); // 将原数组 index 以后的元素都 copy到新的数组里面(包括index位置的元素)
+            }
+            newElements[index] = element; // 将 index 赋值 element
+            setArray(newElements); // 将 新的 array set到 CopyOnWriteArrayList 上
+        }finally {
+            lock.unlock();
+        }
+
+    }
+</code></pre>
+<h3 id="span-idhead19-删除span"><span id="head19"> 删除</span></h3>
+<pre><code class="language-java">@Override
+public E remove(int index) {
+    final ReentrantLock lock = this.lock;
+    lock.lock();
+    try{
+        Object[] elements = getArray();
+        int len = elements.length;
+        E oldValue = get(elements, index);
+        int numMoved = len - index - 1;
+        if(numMoved == 0){ // 说明删除的元素的位置在 len - 1 上, 直接拷贝原数组的前 len - 1 个元素
+            setArray(Arrays.copyOf(elements, len - 1));
+        }else{
+            Object[] newElements = new Object[len - 1];
+            System.arraycopy(elements, 0, newElements, 0, index); // 拷贝原数组 0 - index之间的元素 (index 不拷贝)
+            System.arraycopy(elements, index + 1, newElements, index, numMoved); // 拷贝原数组 index+1 到末尾之间的元素 (index＋1也进行拷贝)
+            setArray(newElements);
+        }
+    }finally {
+        lock.unlock();
+    }
+    return null;
+}
+
+public boolean remove(Object o){
+    Object[] snapshot = getArray();
+    // 获取 index 在 snapshot 中的位置, －1 表示不存在
+    int index = indexOf(o, snapshot, 0, snapshot.length);
+    return (index &lt; 0) ? false : remove(o, snapshot, index);
+}
+
+/**
+ * A version of remove(Object) using the strong hint that given
+ * recent snapshot contains o at the given index
+ */
+private boolean remove(Object o, Object[] snapshot, int index){
+    final ReentrantLock lock = this.lock;
+    lock.lock();
+    try {
+        Object[] current = getArray();
+        int len = current.length;
+        // findIndex: &lt;- 这个用法平时用的比较少, 在这里, 只要 break findIndex, 那 if(snapshot != current) 这里括号里面的其他代码就不执行了, 直接跳到括号外面, 建议写个小demo试一下
+        if(snapshot != current) findIndex:{ // snapshot != current 表示数组被另外一个线程操作过, 有变化
+            /**
+             * 下面的操作是发生在 调用方法 &quot;remove(Object o)&quot; 中的 &quot;indexOf&quot;后 , 数组 array 发生变化而做的查询修正工作
+             * 主要分 下面 4 中情况:
+             *  1. 从 index,len 中取出一个较小的值 prefix, 从 current的prefix前个元素中寻找元素 o, 找到后, 直接 break, 执行下面的操作
+             *  2. 若 index &gt;= len, 则说明 元素 o 在另外的线程中已经被删除, 直接 return
+             *  3. current[index] = o, 则说明, index 位置上的元素 o 还在那边, 直接 break
+             *  4. 最后 在 index 与 len 之间寻找元素, 找到位置直接接下来的代码, 没找到 直接 return
+             */
+            int prefix = Math.min(index, len);
+            for(int i = 0; i &lt; prefix; i++){
+                // 找出 current 数组里面 元素 o 所在的位置 i, 并且赋值给 index
+                if(current[i] != snapshot[i] &amp;&amp; eq(o, current[i])){
+                    index = i;
+                    break findIndex;
+                }
+            }
+
+            if(index &gt;= len){ // index &gt;= len 表示元素 o 已经被删除掉
+                return false;
+            }
+            if(current[index] == o){ // 元素 o 也在数组 current 的 index 位置
+                break findIndex;
+            }
+            index = indexOf(o, current, index, len); // 在 current 中寻找元素 o 所在的位置 (这里不会出现 index &gt; len 的情况, 上面的代码中已经做了判断)
+            if(index &lt; 0){ // 要删除的元素 在另外的线程中被删除掉了, 直接 return false
+                return false;
+            }
+        }
+
+        Object[] newElements = new Object[len - 1]; // 新建一个 len - 1 长度的数组
+        System.arraycopy(current, 0, newElements, 0, index); // 拷贝老数组前 index 个元素
+        System.arraycopy(current, index + 1, newElements, index, len - index - 1); // 拷贝 老数组 index + 1 后的元素 ( index + 1 包含)
+        setArray(newElements);
+        return true;
+    }finally {
+        lock.unlock();
+    }
+}
+</code></pre>
+<h3 id="span-idhead20-使用场景span"><span id="head20"> 使用场景</span></h3>
+<p>CopyOnWriteArrayList在写操作的同时允许读操作，大大提升了读操作的性能，因此很适合读多写少的应用场景。<br>
+但是缺陷也比较明显：<br>
+1.内存占用：在写操作时需要复制一个新的数组，使得内存占用为原来的两倍左右；<br>
+2.数据不一致：读操作不能读取实时性的数据，因为部分写操作的数据还没有同步到读数组中。<br>
+所以CopyInWriteArrayList不适用内存敏感以及对实时性要求很高的场景。</p>
+<h2 id="span-idhead2123-hashmapspan"><span id="head21">2.3 HashMap</span></h2>
+<h3 id="span-idhead22-继承关系span"><span id="head22"> 继承关系</span></h3>
+<pre><code class="language-java">public class HashMap&lt;K,V&gt; extends AbstractMap&lt;K,V&gt;
+    implements Map&lt;K,V&gt;, Cloneable, Serializable 
+    {   }
+</code></pre>
+<p><img src="https://PaIn22152.github.io/post-images/1629974408257.jpg" alt="" loading="lazy"><br>
+实现了Cloneable接口，这也是一个标记接口，表示该对象能被clone，即可以使用Object.clone()方法。如果没有实现Cloneable的类对象调用clone()方法会抛出CloneNotSupportException。且是深拷贝。<br>
+实现了Serializable接口，这也是一个标记接口，用于标记实现类可以序列化。</p>
+<h3 id="span-idhead23-存储结构span"><span id="head23"> 存储结构</span></h3>
+<p>HashMap是数组+链表+红黑树（JDK8增加的红黑树）实现，如下图：<br>
+<img src="https://PaIn22152.github.io/post-images/1629976003274.png" alt="" loading="lazy"><br>
+存储数据的是数组Node[] table，数组里面的元素是链表或者红黑树。Node是HashMap的一个内部类，实现了Map.Entry接口，本质上就是一个映射（键值对），上图的每个黑色圆点就是一个Node对象。</p>
+<pre><code class="language-java">static class Node&lt;K,V&gt; implements Map.Entry&lt;K,V&gt; {
+        final int hash;    //用来定位数组索引位置
+        final K key;
+        V value;
+        Node&lt;K,V&gt; next;   //链表的下一个node
+
+        Node(int hash, K key, V value, Node&lt;K,V&gt; next) { ... }
+        public final K getKey(){ ... }
+        public final V getValue() { ... }
+        public final String toString() { ... }
+        public final int hashCode() { ... }
+        public final V setValue(V newValue) { ... }
+        public final boolean equals(Object o) { ... }
+}
+</code></pre>
+<p>JDK8增加红黑树，是为了当出现拉链过长（哈希值集中在某几个桶位置）时，也能够利用红黑树快速增删改查的特点，提升HashMap的性能</p>
+<h3 id="span-idhead24-字段span"><span id="head24"> 字段</span></h3>
+<p>列举几个关键字段</p>
+<pre><code class="language-java">//默认值
+//数组table的默认大小
+static final int DEFAULT_INITIAL_CAPACITY = 1 &lt;&lt; 4; // aka 16
+//数组的最大大小
+static final int MAXIMUM_CAPACITY = 1 &lt;&lt; 30;
+//装载因子的默认大小
+static final float DEFAULT_LOAD_FACTOR = 0.75f;
+//链表转红黑树的阈值，JDK8新加
+static final int TREEIFY_THRESHOLD = 8;
+
+
+//实际使用的值
+//存储数据的数组，数组的元素是链表或者是红黑树，长度是2的n次方
+transient Node&lt;K,V&gt;[] table;
+
+//键值对的数量
+transient int size;
+
+//size的临界值，当size大于等于这个值时，需要进行扩容操作
+int threshold;
+
+//装载因子，threshold= loadFactor*table的大小
+final float loadFactor;
+
+//修改次数，用来记录内部结构发生变化，主要用于迭代的快速失败，同ArrayList
+ transient int modCount;
+
+</code></pre>
+<h3 id="span-idhead25-功能实现span"><span id="head25"> 功能实现</span></h3>
+<p>主要从根据key获取哈希桶数组索引位置、put方法的详细执行、扩容过程三个点展开。</p>
+<h4 id="span-idhead26-1确定哈希桶数组索引位置span"><span id="head26"> 1.确定哈希桶数组索引位置</span></h4>
+<p>不管增加、删除、查找键值对，定位到哈希桶数组的位置都是很关键的第一步。HashMap的数据结构是数组和链表的结合，所以我们希望这个HashMap里面的元素位置尽量均匀些，尽量每个位置上的元素数量只有一个，这种情况下，当我们用hash算法求得这个位置的时候，就马上可以知道对应位置的元素，不用遍历链表，大大优化了查询效率。HashMap定位数组索引位置，直接决定了hash方法的离散性能。下面是java源码：</p>
+<pre><code class="language-java">方法一：
+static final int hash(Object key) {   //jdk1.8 &amp; jdk1.7
+     int h;
+     // h = key.hashCode() 为第一步 取hashCode值
+     // h ^ (h &gt;&gt;&gt; 16)  为第二步 高位参与运算
+     return (key == null) ? 0 : (h = key.hashCode()) ^ (h &gt;&gt;&gt; 16);
+}
+方法二：
+static int indexFor(int h, int length) {  //jdk1.7的源码，jdk1.8没有这个方法，但是实现原理一样的
+     return h &amp; (length-1);  //第三步 取模运算
+}
+</code></pre>
+<p>hash算法本质上是三步：取key的HashCode值、高位运算、取模运算。<br>
+对于任意给定的对象，只要他的hashCode()返回值相同，那么程序调用方法一所计算得到的hash码值总是相同的。我们首先想到的就是把hash值对数组长度取模运算（h%len)，这样一来，元素的分布相对来说是比较均匀的。但是，取模运算的消耗是比较大的，在HashMap中是这样做的：调用方法二来计算该对象应该保存在table数组的哪个索引处。这个方法非常巧妙，它通过h&amp;(table.len - 1)来得到该对象的保存位，而hashMap规定数组的长度总是2的n次方，当len总是2的n次方时，h&amp;(len-1)等价于取模运算h%len，但是具有更高的效率。<br>
+在JDK8的实现中，优化了高位运算的算法，通过hashCode的高16位异或低16位实现：(h = k.hashCode()) ^ (h &gt;&gt;&gt; 16)，主要是从速度、功效、质量来考虑，这么做可以在数组table的len比较小的时候，也能保证高低bit都参与到hash的计算中，同时不会有太大的开销。</p>
+<h4 id="span-idhead27-2分析hashmap的put方法流程span"><span id="head27"> 2.分析HashMap的put方法流程</span></h4>
+<p>流程图如下：<br>
+<img src="https://PaIn22152.github.io/post-images/1629979591692.png" alt="" loading="lazy"><br>
+①判断键值对数组table是否为空或null，如果是执行resize进行扩容；<br>
+②根据键key计算hash值得到插入的数组索引i，如果table[i]==null，直接新建节点添加，转向⑥，如果不为空，转向③；<br>
+③判断table[i]的首个元素是否和key一样，如果相同直接覆盖value，否则转向④，这里的相同指的是hashCode以及equals；<br>
+④判断table[i]是否是treeBode红黑树，如果是，则直接在树中插入键值对，否则转向⑤；<br>
+⑤遍历table[i]，判断链表长度是否大于8，大于8就把链表转换成红黑树，在树中执行插入操作，否则在链表中执行插入，遍历过程中若发现key已经存在，直接覆盖value即可；<br>
+⑥插入成功后，判断实际存在的键值对数量size是否超过了最大容量threshold，如果超过，进行扩容。<br>
+JDK8中的HashMap的put方法源码如下：</p>
+<pre><code class="language-java">1 public V put(K key, V value) {
+ 2     // 对key的hashCode()做hash
+ 3     return putVal(hash(key), key, value, false, true);
+ 4 }
+ 5 
+ 6 final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+ 7                boolean evict) {
+ 8     Node&lt;K,V&gt;[] tab; Node&lt;K,V&gt; p; int n, i;
+ 9     // 步骤①：tab为空则创建
+10     if ((tab = table) == null || (n = tab.length) == 0)
+11         n = (tab = resize()).length;
+12     // 步骤②：计算index，并对null做处理 
+13     if ((p = tab[i = (n - 1) &amp; hash]) == null) 
+14         tab[i] = newNode(hash, key, value, null);
+15     else {
+16         Node&lt;K,V&gt; e; K k;
+17         // 步骤③：节点key存在，直接覆盖value
+18         if (p.hash == hash &amp;&amp;
+19             ((k = p.key) == key || (key != null &amp;&amp; key.equals(k))))
+20             e = p;
+21         // 步骤④：判断该链为红黑树
+22         else if (p instanceof TreeNode)
+23             e = ((TreeNode&lt;K,V&gt;)p).putTreeVal(this, tab, hash, key, value);
+24         // 步骤⑤：该链为链表
+25         else {
+26             for (int binCount = 0; ; ++binCount) {
+27                 if ((e = p.next) == null) {
+28                     p.next = newNode(hash, key,value,null);
+                        //链表长度大于8转换为红黑树进行处理
+29                     if (binCount &gt;= TREEIFY_THRESHOLD - 1) // -1 for 1st  
+30                         treeifyBin(tab, hash);
+31                     break;
+32                 }
+                    // key已经存在直接覆盖value
+33                 if (e.hash == hash &amp;&amp;
+34                     ((k = e.key) == key || (key != null &amp;&amp; key.equals(k)))) 
+35							break;
+36                 p = e;
+37             }
+38         }
+39         
+40         if (e != null) { // existing mapping for key
+41             V oldValue = e.value;
+42             if (!onlyIfAbsent || oldValue == null)
+43                 e.value = value;
+44             afterNodeAccess(e);
+45             return oldValue;
+46         }
+47     }
+
+48     ++modCount;
+49     // 步骤⑥：超过最大容量 就扩容
+50     if (++size &gt; threshold)
+51         resize();
+52     afterNodeInsertion(evict);
+53     return null;
+54 }
+
+</code></pre>
+<h4 id="span-idhead28-扩容机制span"><span id="head28"> 扩容机制</span></h4>
+<p>扩容（resize）就是重新计算容量，Java的数组是无法自动扩容的，所以使用一个新的数组代替已有的数组，就像是用小桶装水，如果要装更多的水，就需要换大桶。<br>
+由于JDK的resize融入了红黑树相关的逻辑，比较复杂，为了好理解使用JDK7的代码，本质上区别不大。</p>
+<pre><code class="language-java"> 1 void resize(int newCapacity) {   //传入新的容量
+ 2     Entry[] oldTable = table;    //引用扩容前的Entry数组
+ 3     int oldCapacity = oldTable.length;         
+ 4     if (oldCapacity == MAXIMUM_CAPACITY) {  //扩容前的数组大小如果已经达到最大(2^30)了
+ 5         threshold = Integer.MAX_VALUE; //修改阈值为int的最大值(2^31-1)，这样以后就不会扩容了
+ 6         return;
+ 7     }
+ 8  
+ 9     Entry[] newTable = new Entry[newCapacity];  //初始化一个新的Entry数组
+10     transfer(newTable);                         //！！将数据转移到新的Entry数组里
+11     table = newTable;                           //HashMap的table属性引用新的Entry数组
+12     threshold = (int)(newCapacity * loadFactor);//修改阈值
+13 }
+</code></pre>
+<p>这里使用一个容量更大的数组来代替已有的小容量数组，transfer()方法将原有Entry数组的元素拷贝到新的Entry数组里。</p>
+<pre><code class="language-java"> 1 void transfer(Entry[] newTable) {
+ 2     Entry[] src = table;                   //src引用了旧的Entry数组
+ 3     int newCapacity = newTable.length;
+ 4     for (int j = 0; j &lt; src.length; j++) { //遍历旧的Entry数组
+ 5         Entry&lt;K,V&gt; e = src[j];             //取得旧Entry数组的每个元素
+ 6         if (e != null) {
+ 7             src[j] = null;//释放旧Entry数组的对象引用（for循环后，旧的Entry数组不再引用任何对象）
+ 8             do {
+ 9                 Entry&lt;K,V&gt; next = e.next;
+10                 int i = indexFor(e.hash, newCapacity); //！！重新计算每个元素在数组中的位置
+11                 e.next = newTable[i]; //标记[1]
+12                 newTable[i] = e;      //将元素放在数组上
+13                 e = next;             //访问下一个Entry链上的元素
+14             } while (e != null);
+15         }
+16     }
+17 } 
+</code></pre>
+<p>newTable[i]的引用赋给了e.next，也就是使用了单链表的头插入方式，同一位置上新元素总会被放在链表的头部位置；这样先放在一个索引上的元素终会被放到Entry链的尾部（如果发生了hash冲突），这一点和JDK8有点区别。在就数组中同一条Entry链上的元素，通过重新计算索引位置后，有可能放到了新数组不同的位置。<br>
+说说JDK8做了哪些优化。经过观测可以发现，我们使用的是2次幂的扩展（长度是原来的2倍），所以，元素的新位置要么是原位置，要么是原位置再移动2次幂的位置，具体看下图。n为table的长度，图a表示扩容前的key1和key2两种key确定索引位置的示例，图b表示扩容后key1和key2两种key确定索引位置的示例，hash1表示key1对应的哈希与高位运算结果。<br>
+<img src="https://PaIn22152.github.io/post-images/1629981151970.png" alt="" loading="lazy"><br>
+元素在重新计算hash后，因为n变成了2倍，那么n-1的mask范围在高位多1bit（红色），因此新的index就会发生这样的变化：<br>
+<img src="https://PaIn22152.github.io/post-images/1629981432529.png" alt="" loading="lazy"><br>
+因此在扩充HashMap时，不需要想JDK7那样重新计算hash，只需要看看原来的hash值新增的那个bit是1还是0，0索引不变，1索引变成“原索引+oldCap”</p>
+<h3 id="span-idhead29-小结span"><span id="head29"> 小结</span></h3>
+<p>1.扩容特别耗性能，所以使用HashMap时可以先估算map大小，初始化时给一个大致的数值，避免频繁扩容；<br>
+2.负载因子0.75是平衡时间和空间后的取值，可以修改，也可以大于1，但是一般不建议修改，除非情况特殊且你明确知道你的修改代表什么（如果内存空间很多而又对时间效率要求很高，可以降低负载因子Load factor的值；相反，如果内存空间紧张而对时间效率要求不高，可以增加负载因子loadFactor的值）；<br>
+3.HashMap是线程不安全的，并发情况使用ConcurrentHashMap；<br>
+4.JDK8引入的红黑树，很大程度上优化了HashMap的性能。</p>
+<p>为什么要求table的长度为2的n次方：<br>
+主要有两个原因，1.确定索引的时候，当len=2的幂次，h%len等价h &amp; (len - 1)，但是&amp;运行效率高于%运算；2.扩容的时候，可以快速确定元素的新索引位置（原位置  或者  原位置+oldCap）。</p>
+<h2 id="span-idhead3024-concurrenthashmapspan"><span id="head30">2.4 ConcurrentHashMap</span></h2>
+<p>比较HashMap、HashTable、ConcurrentHashMap。<br>
+HashMap不是线程安全的，不能在并发的情况下使用。<br>
+HashTable是线程安全的，但是是通过整个加锁的方式，当一个线程在写操作时，其他的线程不能读写。效率不够。<br>
+ConcurrentHashMap线程安全，使用的是分段锁实现，每一个锁维护多个桶，当写数据时，其他桶位置依然可以进行读写，支持了并发读写，效率得到提高。</p>
+<p>ConcurrentHashMap的实现，是在HashMap的基础上增加了分段锁，具体细节不再展开。</p>
+
+            </div>
+            
+            
+              <div class="next-post">
+                <div class="next">下一篇</div>
+                <a href="https://PaIn22152.github.io/post/ken-yuan-ma-zhi-eventbus/">
+                  <h3 class="post-title">
+                    啃源码之--EventBus
+                  </h3>
+                </a>
+              </div>
+            
+
+            
+
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+
+<script type="application/javascript">
+
+AOS.init();
+
+hljs.initHighlightingOnLoad()
+
+var app = new Vue({
+  el: '#app',
+  data: {
+    menuVisible: false,
+  },
+})
+
+</script>
+
+
+
+
+  </body>
+</html>
