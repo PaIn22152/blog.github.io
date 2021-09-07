@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://PaIn22152.github.io</id>
     <title>Payne的小站</title>
-    <updated>2021-09-02T16:08:48.713Z</updated>
+    <updated>2021-09-07T12:31:51.240Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://PaIn22152.github.io"/>
     <link rel="self" href="https://PaIn22152.github.io/atom.xml"/>
@@ -11,6 +11,464 @@
     <logo>https://PaIn22152.github.io/images/avatar.png</logo>
     <icon>https://PaIn22152.github.io/favicon.ico</icon>
     <rights>All rights reserved 2021, Payne的小站</rights>
+    <entry>
+        <title type="html"><![CDATA[啃源码之--Lifecycle]]></title>
+        <id>https://PaIn22152.github.io/post/ken-yuan-ma-zhi-lifecycle/</id>
+        <link href="https://PaIn22152.github.io/post/ken-yuan-ma-zhi-lifecycle/">
+        </link>
+        <updated>2021-09-03T04:09:47.000Z</updated>
+        <content type="html"><![CDATA[<ul>
+<li><a href="#head1"> 0.前言</a></li>
+<li><a href="#head2"> 1.使用</a></li>
+<li><a href="#head3"> 2.具体实现</a>
+<ul>
+<li><a href="#head4"> Activity处理流程</a></li>
+<li><a href="#head5"> Fragment处理流程</a></li>
+<li><a href="#head6"> LifecycleRegistry源码</a>
+<ul>
+<li><a href="#head7"> 添加观察者</a></li>
+<li><a href="#head8"> 分发事件</a></li>
+</ul>
+</li>
+<li><a href="#head9"> Lifecycling</a>
+<ul>
+<li><a href="#head10"> ObserverWithState</a></li>
+<li><a href="#head11"> 生成LifecycleEventObserver对象</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#head12"> 总结</a></li>
+</ul>
+<h1 id="span-idhead1-0前言span"><span id="head1"> 0.前言</span></h1>
+<p>在日常开发中，监听Activity和Fragment的生命周期，并在相应的生命周期下面做一些处理，是比较常见的需求，Lifecycle的出现为我们提供了一种统一的监听方式，而且Lifecycle在Jetpack的很多插件中都有被使用，比如LiveData、ViewModel等。接下来会从Lifecycle的使用到源码实现，一步步的了解Lifecycle。</p>
+<h1 id="span-idhead2-1使用span"><span id="head2"> 1.使用</span></h1>
+<p>在androidx包下，androidx.activity.ComponentActivity和androidx.fragment.app.Fragment都实现了LifecycleOwner，表明可以提供Lifecycle实例，相关的源码如下：</p>
+<pre><code class="language-java">public class ComponentActivity extends androidx.core.app.ComponentActivity implements
+        LifecycleOwner,
+        ViewModelStoreOwner,
+        SavedStateRegistryOwner,
+        OnBackPressedDispatcherOwner {}
+
+
+public class Fragment implements ComponentCallbacks, OnCreateContextMenuListener, LifecycleOwner,
+        ViewModelStoreOwner, SavedStateRegistryOwner {}
+
+
+public interface LifecycleOwner {
+    @NonNull
+    Lifecycle getLifecycle();
+}
+</code></pre>
+<p>所以只要是这两个类的子类，就可以直接获得Lifecycle的实例，然后通过addObserver()方法添加订阅者。addObserver()方法定义如下：</p>
+<pre><code class="language-java">    @MainThread
+    public abstract void addObserver(@NonNull LifecycleObserver observer);
+</code></pre>
+<p>在addObserver方法中，需要传的参数类型是LifecycleObserver，这是一个标记型的接口，没有任何的方法和属性，那么要怎么用呢？其实，我们真正要看的是他的子类，一个是FullLifecycleObserver，还有一个是LifecycleEventObserver，两个都是继承自LifecycleObserver的接口，源码如下：</p>
+<pre><code class="language-java">interface FullLifecycleObserver extends LifecycleObserver {
+
+    void onCreate(LifecycleOwner owner);
+
+    void onStart(LifecycleOwner owner);
+
+    void onResume(LifecycleOwner owner);
+
+    void onPause(LifecycleOwner owner);
+
+    void onStop(LifecycleOwner owner);
+
+    void onDestroy(LifecycleOwner owner);
+}
+
+public interface LifecycleEventObserver extends LifecycleObserver {
+    /**
+     * Called when a state transition event happens.
+     *
+     * @param source The source of the event
+     * @param event The event
+     */
+    void onStateChanged(@NonNull LifecycleOwner source, @NonNull Lifecycle.Event event);
+}
+
+</code></pre>
+<p>所以常用方式是继承这两个类中的一个，并实现方法。<br>
+如果继承FullLifecycleObserver，几个实现方法和生命周期一样的名字，一看就明白，而方法的参数LifecycleOwner表示的是Activity或者Fragment。另外，如果是Java8以上的版本，还可以使用DefaultLifecycleObserver这个接口，这是FullLifecycleObserver的子类，并对每一个方法都做了空实现，使用他时只需要实现你想要的方法，而不是所有的方法都必须实现，这种接口方法默认实现是要在Java8才有的特性。<br>
+如果继承LifecycleEventObserver，需要实现方法onStateChanged，方法里面的LifecycleOwner参数表示的是Activity或者Fragment，Lifecycle.Event参数是一个枚举类，表示的是生命周期的事件，和生命周期是对应的。<br>
+除了使用者两种方式外，还可以直接继承LifecycleObserver，添加方法并用@OnLifecycleEvent注解修饰，示例代码如下：</p>
+<pre><code class="language-kotlin">class MyLifecycleObserver : LifecycleObserver {
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
+    fun onResume(lifecycleOwner: LifecycleOwner) {
+    }
+
+    @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+    fun onPause(lifecycleOwner: LifecycleOwner) {
+    }
+    
+    //......其他方法
+}
+</code></pre>
+<p>这种方式不推荐使用。</p>
+<p>以上，就是Lifecycle的简单使用方式。</p>
+<h1 id="span-idhead3-2具体实现span"><span id="head3"> 2.具体实现</span></h1>
+<p>上文提到，androidx下的androidx.activity.ComponentActivity和androidx.fragment.app.Fragment实现了LifecycleOwner，可以直接通过getLifecycle()方法获取到Lifecycle实例，其实这个Lifecycle实例是LifecycleRegistry对象，LifecycleRegistry继承自Lifecycle，相关代码如下：</p>
+<pre><code class="language-java">//ComponentActivity
+    private final LifecycleRegistry mLifecycleRegistry = new LifecycleRegistry(this);
+        public Lifecycle getLifecycle() {
+        return mLifecycleRegistry;
+    }
+
+
+    //Fragment
+        LifecycleRegistry mLifecycleRegistry;
+        private void initLifecycle() {
+            mLifecycleRegistry = new LifecycleRegistry(this);
+        }
+        public Lifecycle getLifecycle() {
+            return mLifecycleRegistry;
+        }
+
+//LifecycleRegistry
+        public class LifecycleRegistry extends Lifecycle {
+        }
+</code></pre>
+<p>先看看在Activity和Fragment中，是怎么将生命周期发送给Lifecycle的。</p>
+<h2 id="span-idhead4-activity处理流程span"><span id="head4"> Activity处理流程</span></h2>
+<p>在ComponentActivity的onCreate方法中，把生命周期的处理全交给ReportFragment，代码如下：</p>
+<pre><code class="language-java">    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mSavedStateRegistryController.performRestore(savedInstanceState);
+        ReportFragment.injectIfNeededIn(this);//具体的处理
+        if (mContentLayoutId != 0) {
+            setContentView(mContentLayoutId);
+        }
+    }
+</code></pre>
+<p>可以看到具体的逻辑实在ReportFragment.injectIfNeededIn()方法中，源码如下：</p>
+<pre><code class="language-java">    public static void injectIfNeededIn(Activity activity) {
+        //API29及其以上，监听activity生命周期的逻辑
+        if (Build.VERSION.SDK_INT &gt;= 29) {
+            // On API 29+, we can register for the correct Lifecycle callbacks directly
+            ReportFragment.LifecycleCallbacks.registerIn(activity);
+        }
+
+        //API29以下，通过在activity添加一个空UI的Fragment，然后监听Fragment的生命周期就是Activity的生命周期
+        // Prior to API 29 and to maintain compatibility with older versions of
+        // ProcessLifecycleOwner (which may not be updated when lifecycle-runtime is updated and
+        // need to support activities that don't extend from FragmentActivity from support lib),
+        // use a framework fragment to get the correct timing of Lifecycle events
+        android.app.FragmentManager manager = activity.getFragmentManager();
+        if (manager.findFragmentByTag(REPORT_FRAGMENT_TAG) == null) {
+            manager.beginTransaction().add(new ReportFragment(), REPORT_FRAGMENT_TAG).commit();
+            // Hopefully, we are the first to make a transaction.
+            manager.executePendingTransactions();
+        }
+    }
+</code></pre>
+<p>先看下API29及其以上的逻辑，直接上源码：</p>
+<pre><code class="language-java">    @RequiresApi(29)
+    static class LifecycleCallbacks implements Application.ActivityLifecycleCallbacks {
+        
+        static void registerIn(Activity activity) {
+            //通过activity提供的接口，监听生命周期，是在API29才加入的接口
+            activity.registerActivityLifecycleCallbacks(new ReportFragment.LifecycleCallbacks());
+        }
+
+        @Override
+        public void onActivityPostCreated(@NonNull Activity activity,
+                                          @Nullable Bundle savedInstanceState) {
+            //监听到相应的生命周期，分发事件
+            dispatch(activity, Lifecycle.Event.ON_CREATE);
+        }
+
+        //......其他事件
+
+        @Override
+        public void onActivityPrePaused(@NonNull Activity activity) {
+            dispatch(activity, Lifecycle.Event.ON_PAUSE);
+        }
+    }
+</code></pre>
+<p>通过API29新增的接口，监听生命周期，然后调用dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event)方法分发事件。</p>
+<p>然后看API29以下的逻辑，给Activity添加了Fragment，所以Activity的生命周期可以通过Fragment的回调方法获得，源码如下：</p>
+<pre><code class="language-java">    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        //ProcessLifecycleOwner使用此接口处理，和本文无关，略过
+        dispatchCreate(mProcessListener);
+
+        //分发事件
+        dispatch(Lifecycle.Event.ON_CREATE);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        dispatchStart(mProcessListener);
+        dispatch(Lifecycle.Event.ON_START);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        dispatchResume(mProcessListener);
+        dispatch(Lifecycle.Event.ON_RESUME);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        dispatch(Lifecycle.Event.ON_PAUSE);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        dispatch(Lifecycle.Event.ON_STOP);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        dispatch(Lifecycle.Event.ON_DESTROY);
+        // just want to be sure that we won't leak reference to an activity
+        mProcessListener = null;
+    }
+
+    private void dispatch(@NonNull Lifecycle.Event event) {
+        //判断是否是29以下，避免29及其以上的重复调用
+        if (Build.VERSION.SDK_INT &lt; 29) {
+            // Only dispatch events from ReportFragment on API levels prior
+            // to API 29. On API 29+, this is handled by the ActivityLifecycleCallbacks
+            // added in ReportFragment.injectIfNeededIn
+            dispatch(getActivity(), event);
+        }
+    }
+
+</code></pre>
+<p>可以看到最终的事件处理都会走到dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event)方法，和API29一样。</p>
+<p>接下来看dispatch的处理逻辑，源码如下：</p>
+<pre><code class="language-java">    static void dispatch(@NonNull Activity activity, @NonNull Lifecycle.Event event) {
+        if (activity instanceof LifecycleRegistryOwner) {
+            ((LifecycleRegistryOwner) activity).getLifecycle().handleLifecycleEvent(event);
+            return;
+        }
+
+        if (activity instanceof LifecycleOwner) {
+            Lifecycle lifecycle = ((LifecycleOwner) activity).getLifecycle();
+            if (lifecycle instanceof LifecycleRegistry) {
+                ((LifecycleRegistry) lifecycle).handleLifecycleEvent(event);
+            }
+        }
+    }
+</code></pre>
+<p>逻辑比较简单，都是调用LifecycleRegistry的handleLifecycleEvent(@NonNull Lifecycle.Event event)方法处理事件，至此，Activity在监听到生命周期变化后，把事件交给LifecycleRegistry处理，具体的处理逻辑稍后再看。</p>
+<h2 id="span-idhead5-fragment处理流程span"><span id="head5"> Fragment处理流程</span></h2>
+<p>Androidx下的Fragment，和android.app.Fragment没有任何关系，完全是一个新的类，而Fragment的生命周期监听是FragmentManagerImpl实现的，细节也比较复杂，而且和本文Lifecycle没有太大的关系，具体就不展开讲了，只需要知道的是，当生命周期变化时，最终也和Activity一样会走到LifecycleRegistry的handleLifecycleEvent(@NonNull Lifecycle.Event event)方法，部分源码如下：</p>
+<pre><code class="language-java">    void performStart() {
+        mChildFragmentManager.noteStateNotSaved();
+        mChildFragmentManager.execPendingActions();
+        mState = STARTED;
+        mCalled = false;
+        onStart();
+        if (!mCalled) {
+            throw new SuperNotCalledException(&quot;Fragment &quot; + this
+                    + &quot; did not call through to super.onStart()&quot;);
+        }
+        //具体处理逻辑
+        mLifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START);
+        if (mView != null) {
+            mViewLifecycleOwner.handleLifecycleEvent(Lifecycle.Event.ON_START);
+        }
+        mChildFragmentManager.dispatchStart();
+    }
+</code></pre>
+<p>所以，不管是Activity还是Fragment的生命周期，都是在变化时交给LifecycleRegistry处理的。</p>
+<h2 id="span-idhead6-lifecycleregistry源码span"><span id="head6"> LifecycleRegistry源码</span></h2>
+<p>LifecycleRegistry是Lifecycle的实现类，其中主要的方法有addObserver(@NonNull LifecycleObserver observer)、removeObserver(@NonNull LifecycleObserver observer)、State getCurrentState()。</p>
+<p>说LifecycleRegistry之前，先说一下kotlin中，枚举类的compareTo()方法，源码如下：</p>
+<pre><code class="language-kotlin">public abstract class Enum&lt;E : Enum&lt;E&gt;&gt;(name: String, ordinal: Int): Comparable&lt;E&gt; {
+    public override final fun compareTo(other: E): Int
+}
+</code></pre>
+<p>表示的含义是两个枚举的位置相减，举个具体的例子，Lifecycle.State枚举类的定义如下：</p>
+<pre><code class="language-java">    public enum State {
+        DESTROYED,
+
+        INITIALIZED,
+
+        CREATED,
+
+        STARTED,
+
+        RESUMED;
+
+        public boolean isAtLeast(@NonNull Lifecycle.State state) {
+            return compareTo(state) &gt;= 0;
+        }
+    }
+</code></pre>
+<p>那么DESTROYED的位置可以看作0，然后依次加1，RESUMED看作4。当调用Lifecycle.State.RESUMED.compareTo(Lifecycle.State.DESTROYED)方法时，就用RESUMED的位置4减去DESTROYED的位置0，得到值为4。而State中的isAtLeast方法表示的含义就是，对象至少要等于参数，或者大于参数，即在参数之后的位置。理解了这个，才能理解下文的代码。</p>
+<h3 id="span-idhead7-添加观察者span"><span id="head7"> 添加观察者</span></h3>
+<p>addObserver()方法表示的是添加观察者，下面是LifecycleRegistry的实现：</p>
+<pre><code class="language-java">    public void addObserver(@NonNull LifecycleObserver observer) {
+        //确保在主线程运行
+        //当mEnforceMainThread为true时，必须是在主线程调用，否则抛出异常
+        enforceMainThreadIfNeeded(&quot;addObserver&quot;);
+
+        //初始化生命周期状态，如果当前状态不是DESTROYED，从INITIALIZED状态开始
+        Lifecycle.State initialState = mState == DESTROYED ? DESTROYED : INITIALIZED;
+
+        //根据观察者和初始化状态，生成ObserverWithState实例
+        //先把所有类型的观察者都转成LifecycleEventObserver类型，具体流程后面再说
+        ObserverWithState statefulObserver = new ObserverWithState(observer, initialState);
+
+        //判断观察者是否已经添加到map，如果已经添加，则直接返回
+        ObserverWithState previous = mObserverMap.putIfAbsent(observer, statefulObserver);
+        if (previous != null) {
+            return;
+        }
+
+        //获取LifecycleOwner对象实例，一般来说是Activity或者Fragment实例
+        //为了避免内存泄露，使用弱引用，如果对象为空，说明已经被回收了，直接返回
+        LifecycleOwner lifecycleOwner = mLifecycleOwner.get();
+        if (lifecycleOwner == null) {
+            // it is null we should be destroyed. Fallback quickly
+            return;
+        }
+
+        boolean isReentrance = mAddingObserverCounter != 0 || mHandlingEvent;
+
+        //计算目标状态，目的是从初始化状态遍历到当前实际状态，然后把每一个状态的事件分发
+        Lifecycle.State targetState = calculateTargetState(observer);
+        mAddingObserverCounter++;
+        while ((statefulObserver.mState.compareTo(targetState) &lt; 0
+                &amp;&amp; mObserverMap.contains(observer))) {
+            pushParentState(statefulObserver.mState);
+
+            //获取目标状态的后一个事件，比如当前目标状态是CREATED状态，则返回ON_START事件
+            final Lifecycle.Event event = Event.upFrom(statefulObserver.mState);
+            if (event == null) {
+                throw new IllegalStateException(&quot;no event up from &quot; + statefulObserver.mState);
+            }
+
+            //分发事件
+            statefulObserver.dispatchEvent(lifecycleOwner, event);
+
+            popParentState();
+            // mState / subling may have been changed recalculate
+            targetState = calculateTargetState(observer);
+        }
+
+        if (!isReentrance) {
+            // we do sync only on the top level.
+            sync();
+        }
+        mAddingObserverCounter--;
+    }
+</code></pre>
+<p>关键的事件分发逻辑，会走到ObserverWithState里面的dispatchEvent(LifecycleOwner owner, Event event)方法。</p>
+<h3 id="span-idhead8-分发事件span"><span id="head8"> 分发事件</span></h3>
+<p>除了在添加观察者的时候，会遍历状态并分发事件外，当生命周期发生变化的时候也会主动调用分发事件，即上文提到的handleLifecycleEvent(@NonNull Lifecycle.Event event)方法，而handleLifecycleEvent方法最终又会走到forwardPass(LifecycleOwner lifecycleOwner)方法，forwardPass源码如下：</p>
+<pre><code class="language-java">    private void forwardPass(LifecycleOwner lifecycleOwner) {
+        //遍历所有的观察者，分发事件
+        Iterator&lt;Map.Entry&lt;LifecycleObserver, LifecycleRegistry.ObserverWithState&gt;&gt; ascendingIterator =
+                mObserverMap.iteratorWithAdditions();
+        while (ascendingIterator.hasNext() &amp;&amp; !mNewEventOccurred) {
+            Map.Entry&lt;LifecycleObserver, LifecycleRegistry.ObserverWithState&gt; entry = ascendingIterator.next();
+            LifecycleRegistry.ObserverWithState observer = entry.getValue();
+            while ((observer.mState.compareTo(mState) &lt; 0 &amp;&amp; !mNewEventOccurred
+                    &amp;&amp; mObserverMap.contains(entry.getKey()))) {
+                pushParentState(observer.mState);
+                final Lifecycle.Event event = Event.upFrom(observer.mState);
+                if (event == null) {
+                    throw new IllegalStateException(&quot;no event up from &quot; + observer.mState);
+                }
+                //具体的事件分发逻辑
+                observer.dispatchEvent(lifecycleOwner, event);
+                popParentState();
+            }
+        }
+    }
+</code></pre>
+<p>最终也是会走到ObserverWithState里面的dispatchEvent(LifecycleOwner owner, Event event)方法。</p>
+<h2 id="span-idhead9-lifecyclingspan"><span id="head9"> Lifecycling</span></h2>
+<p>上文有两个地方还没有细说，一个是添加观察者的时候，根据观察者和状态生成ObserverWithState实例；还有一个是ObserverWithState里面的dispatchEvent分发事件。</p>
+<h3 id="span-idhead10-observerwithstatespan"><span id="head10"> ObserverWithState</span></h3>
+<p>ObserverWithState是一个包装类，有两个属性State和LifecycleEventObserver，源码如下：</p>
+<pre><code class="language-java">    static class ObserverWithState {
+        Lifecycle.State mState;
+        LifecycleEventObserver mLifecycleObserver;
+
+        ObserverWithState(LifecycleObserver observer, Lifecycle.State initialState) {
+            //把所有类型的LifecycleObserver都转成LifecycleEventObserver，具体逻辑在Lifecycling实现
+            mLifecycleObserver = Lifecycling.lifecycleEventObserver(observer);
+            mState = initialState;
+        }
+
+        void dispatchEvent(LifecycleOwner owner, Lifecycle.Event event) {
+            Lifecycle.State newState = event.getTargetState();
+            mState = min(mState, newState);
+            //通过LifecycleEventObserver的onStateChanged方法，实现事件的分发
+            mLifecycleObserver.onStateChanged(owner, event);
+            mState = newState;
+        }
+    }
+</code></pre>
+<p>可以发现，主要的逻辑是把所有类型的LifecycleObserver都转成LifecycleEventObserver，然后就可以都通过 mLifecycleObserver.onStateChanged实现事件分发。</p>
+<h3 id="span-idhead11-生成lifecycleeventobserver对象span"><span id="head11"> 生成LifecycleEventObserver对象</span></h3>
+<p>Lifecycling.lifecycleEventObserver方法源码如下：</p>
+<pre><code class="language-java">    static LifecycleEventObserver lifecycleEventObserver(Object object) {
+        //先判断观察者是不是LifecycleEventObserver或FullLifecycleObserver的子类，
+        //如果是FullLifecycleObserver的子类，返回FullLifecycleObserverAdapter适配器，
+        //适配器会在onStateChanged的时候，根据不同的事件，调用他相应的方法
+        boolean isLifecycleEventObserver = object instanceof LifecycleEventObserver;
+        boolean isFullLifecycleObserver = object instanceof FullLifecycleObserver;
+        if (isLifecycleEventObserver &amp;&amp; isFullLifecycleObserver) {
+            return new FullLifecycleObserverAdapter((FullLifecycleObserver) object,
+                    (LifecycleEventObserver) object);
+        }
+        if (isFullLifecycleObserver) {
+            return new FullLifecycleObserverAdapter((FullLifecycleObserver) object, null);
+        }
+
+        //如果只是LifecycleEventObserver的子类，直接返回
+        if (isLifecycleEventObserver) {
+            return (LifecycleEventObserver) object;
+        }
+
+        //如果观察者是通过实现LifecycleObserver，并用注解 @OnLifecycleEvent修饰方法这样的方式实现的，
+        //就走下面的逻辑，会用反射实现，具体就不展开了
+        //因为会用到反射，所以会有性能问题，这就是这种方法不推荐使用的原因
+        final Class&lt;?&gt; klass = object.getClass();
+        int type = getObserverConstructorType(klass);
+        if (type == GENERATED_CALLBACK) {
+            List&lt;Constructor&lt;? extends GeneratedAdapter&gt;&gt; constructors =
+                    sClassToAdapters.get(klass);
+            if (constructors.size() == 1) {
+                GeneratedAdapter generatedAdapter = createGeneratedAdapter(
+                        constructors.get(0), object);
+                return new SingleGeneratedAdapterObserver(generatedAdapter);
+            }
+            GeneratedAdapter[] adapters = new GeneratedAdapter[constructors.size()];
+            for (int i = 0; i &lt; constructors.size(); i++) {
+                adapters[i] = createGeneratedAdapter(constructors.get(i), object);
+            }
+            return new CompositeGeneratedAdaptersObserver(adapters);
+        }
+        return new ReflectiveGenericLifecycleObserver(object);
+    }
+</code></pre>
+<p>Lifecycling的封装和上文提到的，Lifecycle的使用，可以有三种不同的观察者相对应。<br>
+有一个疑问是，为什么要提供三种不同的方式，使用其中的一种或者两种不是也可以吗（去掉反射）。</p>
+<h1 id="span-idhead12-总结span"><span id="head12"> 总结</span></h1>
+<p>1.androidx下的androidx.activity.ComponentActivity和androidx.fragment.app.Fragment实现了LifecycleOwner接口，提供了Lifecycle的实例，且这个实例是LifecycleRegistry类型；<br>
+2.androidx.activity.ComponentActivity下的生命周期监听，分为API29以上和以下两种情况，API29及其以上，使用Activity新加的接口activity.registerActivityLifecycleCallbacks实现；API29以下，通过添加无UI的Fragment，然后在Fragment监听生命周期。而androidx.fragment.app.Fragment是通过FragmentManagerImpl实现的生命周期监听。<br>
+3.LifecycleRegistry会将外部传进来的LifecycleObserver对象都包装成LifecycleEventObserver对象，屏蔽了外部LifecycleObserver的差异性（可能是接口，也可能是注解），然后调用LifecycleEventObserver对象的onStateChanged方法来完成事件回调。<br>
+4.最后是一个疑问，为什么要提供多种方式的LifecycleObserver？</p>
+]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Java IO]]></title>
         <id>https://PaIn22152.github.io/post/java-io/</id>
@@ -1255,7 +1713,7 @@ ConcurrentHashMap线程安全，使用的是分段锁实现，每一个锁维护
 <h1 id="前言">前言</h1>
 <p><a href="https://github.com/greenrobot/EventBus">EventBus</a>使用和源码都比较简单，适合新手上手源码阅读。代码基于3.2.0版本，implementation 'org.greenrobot:eventbus:3.2.0'。</p>
 <h1 id="span-idhead1-主要功能span"><span id="head1"> 主要功能</span></h1>
-<p>简单使用流程，在需要订阅消息的地方（activity或者fragment），定义处理消息的方法，并用@Subscribe修饰，同时要在create注册，在destroy解注册，然后在合适的地方，调用post发送该类型的消息，就能在处理消息的地方收到发送的消息。</p>
+<p>简单使用流程：在需要订阅消息的地方（activity或者fragment），定义处理消息的方法，并用@Subscribe修饰，同时要在create注册，在destroy解注册，然后在合适的地方，调用post发送该类型的消息，就能在处理消息的地方收到发送的消息。</p>
 <p>其中有下面几个主要功能：<br>
 1.获取EventBus对象<br>
 2.注册<br>
@@ -1302,7 +1760,7 @@ EventBus(EventBusBuilder builder) {
        executorService = builder.executorService;
 }
 </code></pre>
-<p>使用了建造者模式（Builder模式），除了使用默认的builder构造EventBus，还可以使用自定义的builder，EventBus提供了一个静态方法生成Builder对象，而在Builer中又提供了方法生成EventBus对象，代码如下：</p>
+<p>EventBus的对象创建使用了建造者模式（Builder模式），除了使用默认的builder构造EventBus，还可以使用自定义的builder，EventBus提供了一个静态方法生成Builder对象，而在Builer中又提供了方法生成EventBus对象，代码如下：</p>
 <pre><code class="language-java">//静态方法生产Builder
 public static EventBusBuilder builder() {
         return new EventBusBuilder();
@@ -1325,7 +1783,7 @@ public static EventBusBuilder builder() {
             .build()
 </code></pre>
 <h1 id="span-idhead3-注册span"><span id="head3"> 注册</span></h1>
-<h2 id="span-idhead4-registerspan"><span id="head4"> register</span></h2>
+<h2 id="span-idhead4-总注册流程span"><span id="head4"> 总注册流程</span></h2>
 <p>register(this)方法源码如下：</p>
 <pre><code class="language-java">public void register(Object subscriber) {
         //1.获取传入参数的class对象
@@ -1655,9 +2113,9 @@ invokeSubscriber源码如下：</p>
     }
 </code></pre>
 <p>逻辑简单清晰，直接通过反射调用订阅方法。<br>
-asyncPoster队列原理是，把消息放在队列里面，然后通过线程池拿到子线程后，在子线程获取消息队列里的消息，然后再执行上面的invokeSubscriber。<br>
-backgroundPoster原理和asyncPoster类似，区别是增加了并发同步的处理。（有疑问，backgroundPoster的调用都是在主线程的，而asyncPoster可能是任意线程调用，为什么不是asyncPoster增加并发同步的处理？？？）<br>
-mainThreadPoster和backgroundPoster类似，都有加并发同步，然后通过handler发送消息到主线程，再在主线程调用invokeSubscriber。</p>
+asyncPoster队列原理是，把消息放在队列里面，然后通过线程池拿到子线程后，在子线程获取消息队列里的消息，然后再执行上面的invokeSubscriber。每来一条消息就开一个线程处理，消息之间是并发的。<br>
+backgroundPoster原理和asyncPoster类似，区别是增加了同步逻辑，用来保证消息顺序执行，上一条消息执行完成再执行下一条消息。<br>
+mainThreadPoster和backgroundPoster类似，都有加同步，然后通过handler发送消息到主线程，再在主线程调用invokeSubscriber。</p>
 <p>说完了post，在来看一下postSticky，源码如下：</p>
 <pre><code class="language-java"> public void postSticky(Object event) {
         synchronized (stickyEvents) {
@@ -1725,7 +2183,7 @@ public class TestActivity extends AppCompatActivity {
     }
 }
 </code></pre>
-<p>编译之后，就会生产如下的java文件：</p>
+<p>编译之后，就会自动生成如下的java文件：</p>
 <pre><code class="language-java">//This class is generated by EventBus, do not edit. 
 public class MyEventBusIndex implements SubscriberInfoIndex {
     private static final Map&lt;Class&lt;?&gt;, SubscriberInfo&gt; SUBSCRIBER_INDEX;
@@ -3155,88 +3613,6 @@ public int test(){
         </link>
         <updated>2021-06-17T02:50:10.000Z</updated>
         <content type="html"><![CDATA[<p>s</p>
-]]></content>
-    </entry>
-    <entry>
-        <title type="html"><![CDATA[蓝牙应用开发流程]]></title>
-        <id>https://PaIn22152.github.io/post/lan-ya-ying-yong-kai-fa-liu-cheng/</id>
-        <link href="https://PaIn22152.github.io/post/lan-ya-ying-yong-kai-fa-liu-cheng/">
-        </link>
-        <updated>2021-06-15T10:54:18.000Z</updated>
-        <content type="html"><![CDATA[<h1 id="前言">前言</h1>
-<p>使用flutter蓝牙插件<a href="https://pub.dev/packages/flutter_blue">flutter_blue</a>实现。</p>
-<h1 id="开发流程">开发流程</h1>
-<p>Ble低功耗蓝牙，不管是android还是ios，都是如下的流程：</p>
-<h2 id="1扫描设备">1.扫描设备；</h2>
-<p>通过广播的形式，可以扫描附近的蓝牙设备，扫描到的数据包括蓝牙名称name和信号强度rssi。代码如下</p>
-<pre><code class="language-dart">FlutterBlue flutterBlue = FlutterBlue.instance;
-
-// Start scanning
-flutterBlue.startScan(timeout: Duration(seconds: 4));
-
-// Listen to scan results
-var subscription = flutterBlue.scanResults.listen((results) {
-    // do something with scan results
-    for (ScanResult r in results) {
-        print('${r.device.name} found! rssi: ${r.rssi}');
-    }
-});
-
-// Stop scanning
-flutterBlue.stopScan();
-</code></pre>
-<h2 id="2连接设备">2.连接设备</h2>
-<p>扫描设备后，匹配到合适的蓝牙名称，然后连接该设备。代码如下</p>
-<pre><code class="language-dart">
-// Connect to the device
-await device.connect();
-
-// Disconnect from device
-device.disconnect();
-
-</code></pre>
-<h2 id="3发现设备">3.发现设备</h2>
-<p>连接设备后，需要发现设备，因为设备可能提供多个服务，每一个服务又有多个特征，我们要做的是，根据设备方提供的服务值和特征值匹配到可用的特征。代码如下</p>
-<pre><code class="language-dart">
-List&lt;BluetoothService&gt; services = await device.discoverServices();
-    services.forEach((service) {
-      var value = service.uuid.toString();
-      logD(&quot;所有服务值 --- $value&quot;);
-      if (service.uuid.toString().toLowerCase() == bleProduct.serviceUuid) {
-        List&lt;BluetoothCharacteristic&gt; characteristics = service.characteristics;
-        characteristics.forEach((characteristic) async {
-          var valuex = characteristic.uuid.toString();
-          logD(&quot;所有特征值 --- $valuex&quot;);
-          if (characteristic.uuid.toString().toLowerCase() ==
-              bleProduct.characteristicUuid) {
-            logD(&quot;匹配到正确的特征值：&quot; + bleProduct.characteristicUuid);
-            _characteristic = characteristic;
-            bleProduct.device = device;
-            await _receiveFromDevice();
-            bleProduct.connected = true;
-            _bleConnectedListener(true);
-          }
-        });
-      }
-    });
-
-
-</code></pre>
-<h2 id="4数据的发送和接收">4.数据的发送和接收</h2>
-<p>通过以上步骤获得特征</p>
-<pre><code class="language-dart">//接收
-await characteristic.setNotifyValue(true);
-characteristic.value.listen((value) {
-    // do something with new value
-});
-
-//发送
-_characteristic.write(comm);
-</code></pre>
-<h1 id="需要注意的点">需要注意的点</h1>
-<p>1.BluetoothDevice.id在android上，返回的是蓝牙的mac地址，在ios上，返回的是uuid，这是因为平台限制，ios不能获取mac地址，只能获取uuid。<br>
-2.蓝牙数据传输最大长度是20位byte，如果大于这个长度，需要拆分和组装数据。</p>
-<p><a href="">代码地址</a></p>
 ]]></content>
     </entry>
 </feed>
